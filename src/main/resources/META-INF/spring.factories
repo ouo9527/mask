@@ -1,0 +1,3 @@
+#org.springframework.context.ApplicationListener=\
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.ouo.mask.config.DesensitizationAutoConfiguration

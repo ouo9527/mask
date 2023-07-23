@@ -1,0 +1,27 @@
+ouo:
+  desensitization:
+    test: test
+    rules:
+      - field: name
+        mode: mask
+        scene: log
+        posns[0]:
+          i: 3
+        posns[1]:
+          i: 8
+          hide: true
+      - field: phone
+        mode: replace
+        scene: all
+        posns:
+          - i: 3
+          - i: 8
+            fixed: true
+            rv: "#"
+        surplus:
+          fixed: false
+      - field: id_card
+        mode: hash
+        scene: web
+        algorithm: sm3
+        salt: grvyw$2
