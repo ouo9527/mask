@@ -28,7 +28,7 @@ import java.util.Map;
  * TODO:      基于log4j RewritePolicy实现自定义日志格式（
  *  msg模板（{}）替换之前，即只是此时日志总进口，有利于脱敏）
  *  注：1）在类路径（如：resources目录）下创建log4j2.component.properties文件，
- *  并在改文件中加入Log4jLogEventFactory=xx.xx.Log4jDesensitizedLogEventFactory,会被log4j框架自动加载
+ *  并在改文件中加入Log4jLogEventFactory=com.ouo.mask.log.Log4jDesensitizedLogEventFactory,会被log4j框架自动加载
  *  2）log4j.xml文件【无需配置】
  *  注意Marker的使用：
  *  private static final Marker SENSITIVE_DATA_MARKER = MarkerFactory.getMarker("SENSITIVE_DATA_MARKER");
@@ -64,7 +64,7 @@ public class Log4jDesensitizedLogEventFactory implements LogEventFactory {
                 else break;
             }
             mesg = new SimpleMessage(StrUtil.format(message.getFormat(),
-                    new DefaultDesensitizationHandler(SceneEnum.LOG, rules).desensitized(data)));
+                    (Map<?, ?>) new DefaultDesensitizationHandler(SceneEnum.LOG, rules).desensitized(data)));
         }
         // message.getFormattedMessage() 为null
         return new Log4jLogEvent(loggerName, marker, fqcn, level, mesg, properties, t);

@@ -25,7 +25,7 @@ import java.util.Map;
  *  需要在logback.xml配置文件，增加如下配置：
  *  <configuration>
  *      ……
- *      <conversionRule conversionWord="m" converterClass="LogbackDesensitizeConverter"/>
+ *      <conversionRule conversionWord="m" converterClass="com.ouo.mask.log.LogbackDesensitizeConverter"/>
  *      ……
  *  </configuration>
  *  注：conversionRule标签中conversionWord即定义日志输出格式中的信息参数，默认%msg，若如上自定义为m，则%m
@@ -57,7 +57,7 @@ public class LogbackDesensitizeConverter extends MessageConverter {
                 if (i < event.getArgumentArray().length) data.put(fields.get(i), event.getArgumentArray()[i]);
                 else break;
             }
-            return StrUtil.format(event.getMessage(), new DefaultDesensitizationHandler(SceneEnum.LOG, rules).desensitized(data));
+            return StrUtil.format(event.getMessage(), (Map<?, ?>) new DefaultDesensitizationHandler(SceneEnum.LOG, rules).desensitized(data));
         }
         return super.convert(event);
     }
