@@ -1,8 +1,6 @@
 package com.ouo.mask.web;
 
-import cn.hutool.core.collection.CollUtil;
-import com.ouo.mask.core.DefaultDesensitizationHandler;
-import com.ouo.mask.core.DesensitizationRuleLoader;
+import com.ouo.mask.core.DesensitizationHandler;
 import com.ouo.mask.core.annotation.SceneEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
@@ -25,15 +23,15 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 @Slf4j
 public class WebDesensitizationResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 
-    private DesensitizationRuleLoader loader;
+    private DesensitizationHandler handler;
 
-    public WebDesensitizationResponseBodyAdvice(DesensitizationRuleLoader loader) {
-        this.loader = loader;
+    public WebDesensitizationResponseBodyAdvice(DesensitizationHandler handler) {
+        this.handler = handler;
     }
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        return CollUtil.isNotEmpty(loader.load()) && !Void.TYPE.equals(returnType.getMethod().getReturnType());
+        return null != handler && null != returnType && !Void.TYPE.equals(returnType.getMethod().getReturnType());
     }
 
     @Override
@@ -41,7 +39,6 @@ public class WebDesensitizationResponseBodyAdvice implements ResponseBodyAdvice<
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
 
-        return new DefaultDesensitizationHandler(SceneEnum.WEB, loader.load()).desensitized(body);
+        return handler.desensitized(SceneEnum.WEB, body);
     }
-
 }

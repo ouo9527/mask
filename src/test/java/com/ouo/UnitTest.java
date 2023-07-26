@@ -3,7 +3,7 @@ package com.ouo;
 import cn.hutool.core.util.ReUtil;
 import com.alibaba.fastjson2.JSON;
 import com.ouo.mask.config.DesensitizationAutoConfiguration;
-import com.ouo.mask.core.DefaultDesensitizationHandler;
+import com.ouo.mask.core.DesensitizationHandler;
 import com.ouo.mask.core.annotation.*;
 import com.ouo.mask.core.property.DesensitizationRule;
 import com.ouo.mask.core.property.EmptyDesensitizationRule;
@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
 import org.springframework.beans.factory.config.YamlMapFactoryBean;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -35,6 +36,9 @@ import org.yaml.snakeyaml.Yaml;*/
 //@RunWith(SpringRunner.class)
 @SpringBootTest(classes = DesensitizationAutoConfiguration.class /* properties = {"classpath*:application.properties"}*/)
 public class UnitTest {
+
+    @Autowired
+    private DesensitizationHandler handler;
 
     //@Bean
     public SpringDesensitizationRuleLoader placeholderConfigurer() {
@@ -95,7 +99,7 @@ public class UnitTest {
     @Test
     public void loadRule() {
         SpringDesensitizationRuleLoader loader = SpringUtil.getBean(SpringDesensitizationRuleLoader.class);
-        System.out.println("所加载到脱敏规则：" + JSON.toJSONString(loader.load()));
+        System.out.println("所加载到脱敏规则：" + JSON.toJSONString(loader.getDesensitizationRules()));
     }
 
     @Test
@@ -115,15 +119,13 @@ public class UnitTest {
         posns.add(posn8);
         rule.setPosns(posns);
         rules.add(rule);
-        DefaultDesensitizationHandler handler = new DefaultDesensitizationHandler(null, rules);
-
 
         Map<String, Object> map = new HashMap<>();
         map.put("phone", "17722855144");
         map.put("name", "[1,2]");
 
         System.out.println(
-                handler.desensitized(map));
+                handler.desensitized(SceneEnum.ALL, map));
 
         User user = new User();
         user.setName("张王四");
@@ -136,7 +138,7 @@ public class UnitTest {
         attach.setCard("532128199510286631");
         user.setAttach(attach);
 
-        System.out.println(JSON.toJSONString(handler.desensitized(user)));
+        System.out.println(JSON.toJSONString(handler.desensitized(SceneEnum.ALL, user)));
     }
 
 

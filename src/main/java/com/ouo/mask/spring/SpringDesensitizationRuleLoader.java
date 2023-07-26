@@ -10,10 +10,12 @@ import com.alibaba.fastjson2.JSONObject;
 import com.ouo.mask.core.DesensitizationRuleLoader;
 import com.ouo.mask.core.ModeEnum;
 import com.ouo.mask.core.property.*;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.PropertySources;
 import pl.jalokim.propertiestojson.util.PropertiesToJsonConverter;
 
@@ -25,7 +27,11 @@ import java.util.*;
  * Date:     2023/1/18
  ***********************************************************/
 @Slf4j
+@Getter
 public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderConfigurer implements DesensitizationRuleLoader {
+    public static String PREFIX = "ouo.desensitization";
+    public static String RULES = PREFIX + ".rules";
+    public static String SCAN = PREFIX + ".scan";
     /**
      * @Value失效场景： 1、PropertySourcesPlaceholderConfigurer类及其子类使用，由于配置还未加载并解析
      * 2、使用static或者final修饰
@@ -46,13 +52,15 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
      * 中复杂类型做映射处理时，前者无法映射成数组，而后者可以
      * 3）在spring-boot2.0以下，@ConfigurationProperties映射对象原理由PropertiesConfigurationFactory；2.0后由ConfigurationPropertiesBindingPostProcessor
      */
-    private List<DesensitizationRule> desensitizationRules = new ArrayList<>();
+    private List<DesensitizationRule> desensitizationRules;
+    //todo: 脱敏范围即配置包路径，多个值时以英文逗号隔开；为了减少不必要的数据脱敏，否则会影响系统性能，因此推荐设置，当为空时，会扫描全部类
+    private List<String> scan;
 
     private static Object getJson(Properties properties) {
-        JSONObject mapRules = JSON.parseObject(new PropertiesToJsonConverter().convertToJson(properties, PREFIX));
+        JSONObject mapRules = JSON.parseObject(new PropertiesToJsonConverter().convertToJson(properties, RULES));
         if (CollUtil.isEmpty(mapRules)) return null;
         Object obj = mapRules;
-        for (String k : StrUtil.split(PREFIX, '.')) {
+        for (String k : StrUtil.split(RULES, '.')) {
             if (obj instanceof JSONObject) obj = ((JSONObject) obj).get(k);
             else return null;
         }
@@ -60,26 +68,33 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
     }
 
     @Override
-    public List<DesensitizationRule> load() {
-        return this.desensitizationRules;
-    }
-
-    @Override
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-        super.postProcessBeanFactory(beanFactory);
+    public void load() {
         PropertySources propertySources = this.getAppliedPropertySources();
-        Object localProperties = propertySources.stream()
+        /*Object localProperties = propertySources.stream()
                 .filter(ps -> LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME.equals(ps.getName()))
                 .findFirst()
-                .get().getSource();
-        if (!(localProperties instanceof Properties)) return;
+                .get().getSource();*/
+        Object localProperties = null;
+        Iterator<PropertySource<?>> it = propertySources.iterator();
+        while (it.hasNext()) {
+            PropertySource<?> propertySource = it.next();
+            if (null == propertySource || !LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME.equals(propertySource.getName()))
+                continue;
+            else {
+                localProperties = propertySource.getSource();
+                break;
+            }
+        }
+        if (!(localProperties instanceof Properties) || ((Properties) localProperties).isEmpty()) return;
+        this.scan = StrUtil.splitTrim(((Properties) localProperties).getProperty(SCAN), ',');
+        this.desensitizationRules = new ArrayList<>();
         try {
             Object rules = getJson((Properties) localProperties);
             if (!(rules instanceof List)) return;
             for (int i = 0; i < ((List) rules).size(); i++) {
                 Object rule = ((List) rules).get(i);
                 if (!(rule instanceof Map)) {
-                    log.debug("{}[{}]: It is not an object", PREFIX, i);
+                    log.debug("{}[{}]: It is not an object", RULES, i);
                     continue;
                 }
                 String mode = "";
@@ -89,7 +104,7 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
                     field = StrUtil.toStringOrNull(((Map) rule).get("field"));
                 }
                 if (StrUtil.isBlank(mode) || StrUtil.isBlank(field)) {
-                    log.debug("{}[{}]: field={}, mode={} .There is a blank value", PREFIX, i, field, mode);
+                    log.debug("{}[{}]: field={}, mode={} .There is a blank value", RULES, i, field, mode);
                     continue;
                 }
                 if (StrUtil.equalsIgnoreCase(mode, ModeEnum.EMPTY.name())) {//todo：置空
@@ -131,12 +146,17 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
                     r.setPosns(ps);
                     this.desensitizationRules.add(r);
                 } else {
-                    log.debug("{}[{}]: field={}, mode={} is not within the range of [empty,hash,regex,replace,mask]", PREFIX, i, field, mode);
-                    continue;
+                    log.debug("{}[{}]: field={}, mode={} is not within the range of [empty,hash,regex,replace,mask]", RULES, i, field, mode);
                 }
             }
         } catch (RuntimeException e) {
-            log.error("[{}]: configuration parsing failed: ", PREFIX, e);
+            log.error("[{}]: configuration parsing failed: ", RULES, e);
         }
+    }
+
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        super.postProcessBeanFactory(beanFactory);
+        this.load();
     }
 }

@@ -19,20 +19,9 @@
         2）slf4j + log4j： slf4j-api.jar + slf4j-log412.jar + log4j.jar
         3）slf4j + jul： slf4j-api.jar + slf4j-jdk14.jar
         4）也可以只用slf4j无日志实现：slf4j-api.jar + slf4j-nop.jar
-        注：log4j2配合需要导入log4j2的log4j-api.jar、log4j-core.jar和桥接包log4j-slf4j-impl.jar。
+        注log4j2配合需要导入log4j2的log4j-api.jar、log4j-core.jar和桥接包log4j-slf4j-impl.jar。
         所谓的桥接包，就是实现StaticLoggerBinder类，用来连接slf4j和日志框架。因为log4j和log4j2刚开始没有StaticLoggerBinder这个类，
         为了不改变程序结构，只能重新写一个新的jar来实现StaticLoggerBinder。而logback出现slf4j之后，于是在logback本身的jar中实现了StaticLoggerBinder，所以就不需要桥接包
-    
-        基于logback提供MessageConverter，在message打印之前，允许对“参数格式化之后的message”（formattedMessage）进行转换，
-            最终logger打印的实际内容是converter返回的整形后的结果。需要在logback.xml配置文件，增加如下配置：
-            <configuration>
-                ……
-                <conversionRule conversionWord="m" converterClass="com.ouo.mask.log.LogbackDesensitizeConverter"/>
-                ……
-            </configuration>
-           注：conversionRule标签中conversionWord即定义日志输出格式中的信息参数，默认%msg，若如上自定义为m，则%m
-           
-           
     
     4、对于网页脱敏，支持@ResponseBody修饰或JSON响应    
     
