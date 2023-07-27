@@ -1,5 +1,9 @@
 package com.ouo;
 
+import cn.hutool.core.bean.BeanPath;
+import cn.hutool.core.comparator.CompareUtil;
+import cn.hutool.core.convert.Convert;
+import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.ReUtil;
 import com.alibaba.fastjson2.JSON;
 import com.ouo.mask.config.DesensitizationAutoConfiguration;
@@ -23,10 +27,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /*import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;*/
@@ -45,6 +46,23 @@ public class UnitTest {
         SpringDesensitizationRuleLoader desensitizationRuleLoader = new SpringDesensitizationRuleLoader();
         desensitizationRuleLoader.setLocation(new ClassPathResource("application.properties"));
         return desensitizationRuleLoader;
+    }
+
+    @Test
+    public void properties() throws IOException {
+        //todo: 仅有单层的Map
+        Properties properties = new Properties();
+        properties.load(new ClassPathResource("application.properties").getInputStream());
+
+        //todo：具体层级的Map
+        Dict dict = Dict.create();
+        properties.entrySet().stream()
+                .sorted((e1, e2) ->
+                        CompareUtil.compare(Convert.toStr(e1.getKey()).length(), Convert.toStr(e2.getKey()).length()))
+                .forEach(entry -> {
+                    BeanPath.create(entry.getKey().toString()).set(dict, entry.getValue());
+                });
+        System.out.println(JSON.toJSONString(dict));
     }
 
     @Test
@@ -125,7 +143,7 @@ public class UnitTest {
         map.put("name", "[1,2]");
 
         System.out.println(
-                handler.desensitized(SceneEnum.ALL, map));
+                handler.desensitized("", SceneEnum.ALL, map));
 
         User user = new User();
         user.setName("张王四");
@@ -138,33 +156,33 @@ public class UnitTest {
         attach.setCard("532128199510286631");
         user.setAttach(attach);
 
-        System.out.println(JSON.toJSONString(handler.desensitized(SceneEnum.ALL, user)));
+        System.out.println(JSON.toJSONString(handler.desensitized("", SceneEnum.ALL, user)));
     }
 
 
     @Setter
     @Getter
     static class User {
-        @MaskDesensitization(posns = {@MaskDesensitization.Posn(i = 1)}, surplusHide = true)
+        @Mask(posns = {@Mask.Posn(i = 1)}, surplusHide = true)
         String name;
-        @ReplaceDesensitization(posns = {@ReplaceDesensitization.Posn(i = 3), @ReplaceDesensitization.Posn(i = 8, rv = "#")})
+        @Replace(posns = {@Replace.Posn(i = 3), @Replace.Posn(i = 8, rv = "#")})
         String extra;
-        @ReplaceDesensitization(posns = {@ReplaceDesensitization.Posn(i = 3), @ReplaceDesensitization.Posn(i = 8, rv = "#?12$%34")})
+        @Replace(posns = {@Replace.Posn(i = 3), @Replace.Posn(i = 8, rv = "#?12$%34")})
         String tel;
-        @MaskDesensitization(posns = {@MaskDesensitization.Posn(i = 3), @MaskDesensitization.Posn(i = 8, hide = true)})
+        @Mask(posns = {@Mask.Posn(i = 3), @Mask.Posn(i = 8, hide = true)})
         Long phone;
 
-        @EmptyDesensitization
+        @Empty
         Attach attach;
 
         @Setter
         @Getter
         static class Attach {
-            @EmptyDesensitization
+            @Empty
             String[] hobbies;
-            @RegexDesensitization(pattern = "(\\w{3})\\w+(@qq.com)", rv = "$1***$2")
+            @Regex(pattern = "(\\w{3})\\w+(@qq.com)", rv = "$1***$2")
             String email;
-            @HashDesensitization(algorithm = HashDesensitization.AlgorithmEnum.MD5, salt = "ws@4q#")
+            @Hash(algorithm = Hash.AlgorithmEnum.MD5, salt = "ws@4q#")
             String card;
         }
     }

@@ -1,12 +1,13 @@
 package com.ouo.mask.spring;
 
+import cn.hutool.core.bean.BeanPath;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.ouo.mask.core.DesensitizationRuleLoader;
 import com.ouo.mask.core.ModeEnum;
 import com.ouo.mask.core.property.*;
@@ -17,7 +18,6 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.PropertySources;
-import pl.jalokim.propertiestojson.util.PropertiesToJsonConverter;
 
 import java.util.*;
 
@@ -56,17 +56,6 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
     //todo: 脱敏范围即配置包路径，多个值时以英文逗号隔开；为了减少不必要的数据脱敏，否则会影响系统性能，因此推荐设置，当为空时，会扫描全部类
     private List<String> scan;
 
-    private static Object getJson(Properties properties) {
-        JSONObject mapRules = JSON.parseObject(new PropertiesToJsonConverter().convertToJson(properties, RULES));
-        if (CollUtil.isEmpty(mapRules)) return null;
-        Object obj = mapRules;
-        for (String k : StrUtil.split(RULES, '.')) {
-            if (obj instanceof JSONObject) obj = ((JSONObject) obj).get(k);
-            else return null;
-        }
-        return obj;
-    }
-
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
         super.postProcessBeanFactory(beanFactory);
@@ -80,6 +69,7 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
                 .filter(ps -> LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME.equals(ps.getName()))
                 .findFirst()
                 .get().getSource();*/
+        //todo: 仅有单层的Map
         Object localProperties = null;
         Iterator<PropertySource<?>> it = propertySources.iterator();
         while (it.hasNext()) {
@@ -92,22 +82,23 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
             }
         }
         if (!(localProperties instanceof Properties) || ((Properties) localProperties).isEmpty()) return;
-        this.scan = StrUtil.splitTrim(((Properties) localProperties).getProperty(SCAN), ',');
+        Dict dict = Dict.create();
+        ((Properties) localProperties).entrySet()
+                .stream()
+                .forEach(entry -> {
+                    BeanPath.create(entry.getKey().toString()).set(dict, entry.getValue());
+                });
+        this.scan = StrUtil.splitTrim(dict.getByPath(SCAN, String.class), ',');
         this.desensitizationRules = new ArrayList<>();
+        List<Map<String, Object>> rules = dict.getByPath(RULES, List.class);
         try {
-            Object rules = getJson((Properties) localProperties);
-            if (!(rules instanceof List)) return;
-            for (int i = 0; i < ((List) rules).size(); i++) {
-                Object rule = ((List) rules).get(i);
-                if (!(rule instanceof Map)) {
-                    log.debug("{}[{}]: It is not an object", RULES, i);
-                    continue;
-                }
+            for (int i = 0; i < CollUtil.size(rules); i++) {
+                Map<String, Object> rule = rules.get(i);
                 String mode = "";
                 String field = "";
                 if (null != rule) {
-                    mode = StrUtil.toStringOrNull(((Map) rule).get("mode"));
-                    field = StrUtil.toStringOrNull(((Map) rule).get("field"));
+                    mode = StrUtil.toStringOrNull(rule.get("mode"));
+                    field = StrUtil.toStringOrNull(rule.get("field"));
                 }
                 if (StrUtil.isBlank(mode) || StrUtil.isBlank(field)) {
                     log.debug("{}[{}]: field={}, mode={} .There is a blank value", RULES, i, field, mode);
@@ -120,22 +111,22 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
                 } else if (StrUtil.equalsIgnoreCase(mode, ModeEnum.REGEX.name())) {//todo：正则
                     this.desensitizationRules.add(JSON.to(RegexDesensitizationRule.class, rule));
                 } else if (StrUtil.equalsIgnoreCase(mode, ModeEnum.REPLACE.name())) {//todo：替换
-                    Object posns = ((Map) rule).get("posns");
+                    Object posns = rule.get("posns");
                     //todo：对于springboot yml转properties时，若多层数组嵌套时，会被转成LinkedHashMap
-                    if (posns instanceof Map) ((Map) rule).put("posns", CollUtil.newArrayList(((Map) posns).values()));
+                    if (posns instanceof Map) rule.put("posns", CollUtil.newArrayList(((Map) posns).values()));
                     this.desensitizationRules.add(JSON.to(ReplaceDesensitizationRule.class, rule));
                 } else if (StrUtil.equalsIgnoreCase(mode, ModeEnum.MASK.name())) {//todo：掩盖
-                    Object obj = ((Map) rule).get("posns");
+                    Object obj = rule.get("posns");
                     List<?> posns = Collections.EMPTY_LIST;
                     //todo：对于springboot yml转properties时，若多层数组嵌套时，会被转成LinkedHashMap
                     if (obj instanceof Map)
-                        ((Map) rule).put("posns", posns = CollUtil.newArrayList(((Map) obj).values()));
+                        rule.put("posns", posns = CollUtil.newArrayList(((Map) obj).values()));
                     else if (obj instanceof List) posns = (List<?>) obj;
                     ReplaceDesensitizationRule r = JSON.to(ReplaceDesensitizationRule.class, rule);
                     ReplaceDesensitizationRule.PosnProperty surplus = new ReplaceDesensitizationRule.PosnProperty();
                     surplus.setFixed(true);
-                    surplus.setRv(Convert.convert(Boolean.class, ObjUtil.defaultIfNull(((Map) rule).get("surplusHide"),
-                            ((Map) rule).get("surplus-hide"))
+                    surplus.setRv(Convert.convert(Boolean.class, ObjUtil.defaultIfNull(rule.get("surplusHide"),
+                            rule.get("surplus-hide"))
                             , false) ? "*" : "");
                     r.setSurplus(surplus);
                     List<ReplaceDesensitizationRule.PosnProperty> ps = new ArrayList<>(posns.size());
