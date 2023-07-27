@@ -68,6 +68,12 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
     }
 
     @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+        super.postProcessBeanFactory(beanFactory);
+        this.load();
+    }
+
+    @Override
     public void load() {
         PropertySources propertySources = this.getAppliedPropertySources();
         /*Object localProperties = propertySources.stream()
@@ -152,11 +158,5 @@ public class SpringDesensitizationRuleLoader extends PropertySourcesPlaceholderC
         } catch (RuntimeException e) {
             log.error("[{}]: configuration parsing failed: ", RULES, e);
         }
-    }
-
-    @Override
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-        super.postProcessBeanFactory(beanFactory);
-        this.load();
     }
 }

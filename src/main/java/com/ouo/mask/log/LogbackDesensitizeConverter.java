@@ -36,7 +36,6 @@ public class LogbackDesensitizeConverter extends MessageConverter {
 
     @Override
     public String convert(ILoggingEvent event) {
-
         try {
             DesensitizationHandler handler = SpringUtil.getBean(DesensitizationHandler.class);
             // TODO: 格式-传数组或可变参数值：log.info("模板：{key1}、{key2}...", val1, val2);
@@ -47,7 +46,7 @@ public class LogbackDesensitizeConverter extends MessageConverter {
                     if (i < event.getArgumentArray().length) data.put(fields.get(i), event.getArgumentArray()[i]);
                     else break;
                 }
-                return StrUtil.format(event.getMessage(), (Map<?, ?>) handler.desensitized(SceneEnum.LOG, data));
+                return StrUtil.format(event.getMessage(), (Map<?, ?>) handler.desensitized(event.getLoggerName(), SceneEnum.LOG, data));
             }
         } catch (RuntimeException e) {
             //todo: 会引发死循环，从而造成栈溢出

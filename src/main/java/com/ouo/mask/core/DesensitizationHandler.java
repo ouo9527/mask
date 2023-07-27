@@ -18,9 +18,10 @@ public abstract class DesensitizationHandler {
     /**
      * todo： 根据所加载的脱敏规则进行脱敏数据
      *
+     * @param context 待脱敏对象所处上下文即在那个类中使用
      * @param scene 场景
      * @param obj 待脱敏对象
      * @return 返回已脱敏对象
      */
-    public abstract Object desensitized(SceneEnum scene, Object obj);
+    public abstract Object desensitized(String context, SceneEnum scene, Object obj);
 }

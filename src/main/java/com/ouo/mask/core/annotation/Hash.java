@@ -11,10 +11,10 @@ import java.lang.annotation.*;
  * Date:     2023/1/29
  ***********************************************************/
 @Documented
-@Target({ElementType.FIELD, ElementType.METHOD})
+@Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-public @interface HashDesensitization {
+public @interface Hash {
     // TODO：场景，默认：WEB和LOG
     SceneEnum scene() default SceneEnum.ALL;
 

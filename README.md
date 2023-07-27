@@ -3,11 +3,11 @@
 # 敏感信息无感脱敏
 
     1、注解侵入式：属于局部或精确脱敏，常用于相同字段需要不同脱敏规则的场景，其中注解如下：
-        - @EmptyDesensitization：    置空（将敏感字段值取空，非等长）
-        - @HashDesensitization：     哈希（将敏感字段值取Hash，非等长）
-        - @RegexDesensitization：    正则（将敏感字段值通过正则表达式进行替换，非等长）
-        - @ReplaceDesensitization：  替换（将敏感字段值根据所指定位置进行替换，等长）
-        - @MaskDesensitization：     掩盖（将敏感字段值根据所指定位置进行*替换，等长，且属于特殊替换模式）
+        - @Empty：    置空（将敏感字段值取空，非等长）
+        - @Hash：     哈希（将敏感字段值取Hash，非等长）
+        - @Regex：    正则（将敏感字段值通过正则表达式进行替换，非等长）
+        - @Replace：  替换（将敏感字段值根据所指定位置进行替换，等长）
+        - @Mask：     掩盖（将敏感字段值根据所指定位置进行*替换，等长，且属于特殊替换模式）
         
     2、配置非侵入式：属于全局，常用于与注解侵入式相反的场景，可同时用，若局部匹配不到，则会采用全局匹配，因此最好配置全局规则
     
@@ -27,53 +27,61 @@
     
 ## 注解侵入式案列
 
-    1、电话号码177*****144：@MaskDesensitization(posns = {@MaskDesensitization.Posn(i = 3), @MaskDesensitization.Posn(i = 8, hide = true)})
-    2、电子邮箱133***@qq.com：@RegexDesensitization(pattern = "(\\w{3})\\w+(@qq.com)", rv = "$1***$2")
-    3、身份证：@HashDesensitization(algorithm = HashDesensitization.AlgorithmEnum.MD5, salt = "ws@4q#")
-    4、地址：@ReplaceDesensitization(posns = {@ReplaceDesensitization.Posn(i = 3), @ReplaceDesensitization.Posn(i = 8, rv = "#?12$%34")})
+    1、电话号码177*****144：@Mask(posns = {@Mask.Posn(i = 3), @Mask.Posn(i = 8, hide = true)})
+    2、电子邮箱133***@qq.com：@Regex(pattern = "(\\w{3})\\w+(@qq.com)", rv = "$1***$2")
+    3、身份证：@Hash(algorithm = Hash.AlgorithmEnum.MD5, salt = "ws@4q#")
+    4、地址：@Replace(posns = {@Replace.Posn(i = 3), @Replace.Posn(i = 8, rv = "#?12$%34")})
 
 ## 配置非侵入式案列
 
-    ouo:
-      desensitization:
-        #脱敏规则列表
-        rules:
-          #字段名
-          - field: name
-            #脱敏模式：置空empty、哈希hash、正则regex、替换replace、掩盖mask
-            mode: mask
-            #脱敏场景：日志log、网页web、全部all，默认all
-            scene: log
-            #位置，默认显示
-            posns[0]:
-              i: 3
-            posns[1]:
-              i: 8
-              hide: true
-          - field: phone
-            mode: replace
-            scene: all
-            posns:
-              - i: 3
-              - i: 8
-                #是否固定值，默认true，false为随机值
-                fixed: true
-                #替换值
-                rv: "#"
-            #剩余位置    
-            surplus:
-              fixed: false
-          - field: id_card
-            mode: hash
-            scene: web
-            #算法
-            algorithm: sm3
-            #盐
-            salt: grvyw$2
-          - field: addr
-            mode: empty
-          - field: ip
-            mode: tel
-            #正则表达式
-            pattern: (\\d{3})\\d{4}(\\d{4})
-            rv: $1####$2
+```
+ouo:
+  desensitization:
+    #启动脱敏
+    enabled: true
+    #脱敏范围即配置包路径，多个值时以英文逗号隔开；为了减少不必要的数据脱敏，否则会影响系统性能，因此推荐设置。默认：空，当为空时，会扫描全部类
+    #scan: xx.xx,yy.yy
+    #脱敏规则列表
+    rules:
+      #字段名
+      - field: name
+        #脱敏模式：置空empty、哈希hash、正则regex、替换replace、掩盖mask
+        mode: mask
+        #脱敏场景：日志log、网页web、全部all，默认all
+        scene: log
+        #位置，默认显示
+        posns[0]:
+          i: 1
+        posns[1]:
+          i: 2
+          hide: true
+      - field: phone
+        mode: replace
+        scene: all
+        posns:
+          - i: 3
+          - i: 8
+            #是否固定值，默认true，false为随机值
+            fixed: true
+            #替换值
+            rv: "#"
+        #剩余位置
+        surplus:
+          fixed: false
+      - field: id_card
+        mode: hash
+        scene: web
+        #算法
+        algorithm: sm3
+        #盐
+        salt: grvyw$2
+      - field: addr
+        mode: empty
+      - field: ip
+        mode: regex
+        #正则表达式
+        pattern: (\\d{3})\\d{4}(\\d{4})
+        rv: $1####$2
+```
+
+

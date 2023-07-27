@@ -53,7 +53,7 @@ public class Log4jDesensitizedLogEventFactory implements LogEventFactory {
                     else break;
                 }
                 mesg = new SimpleMessage(StrUtil.format(message.getFormat(),
-                        (Map<?, ?>) handler.desensitized(SceneEnum.LOG, data)));
+                        (Map<?, ?>) handler.desensitized(loggerName, SceneEnum.LOG, data)));
             }
         } catch (RuntimeException e) {
             //todo: 会引发死循环，从而造成栈溢出

@@ -6,6 +6,7 @@ import com.ouo.mask.core.DesensitizationRuleLoader;
 import com.ouo.mask.spring.SpringDesensitizationRuleLoader;
 import com.ouo.mask.spring.SpringUtil;
 import com.ouo.mask.web.WebDesensitizationResponseBodyAdvice;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -26,6 +27,7 @@ import java.util.Properties;
 @ConditionalOnProperty(prefix = "ouo.desensitization", name = "enabled", havingValue = "true")
 @Import({SpringUtil.class, WebDesensitizationResponseBodyAdvice.class})
 //@RefreshScope //springcloud刷新@Value注解属性
+@Slf4j
 public class DesensitizationAutoConfiguration {
 
     @Bean

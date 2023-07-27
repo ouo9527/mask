@@ -30,9 +30,13 @@ public class DefaultDesensitizationHandler extends DesensitizationHandler {
     }
 
     @Override
-    public Object desensitized(SceneEnum scene, Object obj) {
-        if (/*CollUtil.isEmpty(loader.getScan()) || */CollUtil.isEmpty(loader.getDesensitizationRules())) return obj;
-        return desensitizedFromAnnotation(scene, null, null, obj);
+    public Object desensitized(String context, SceneEnum scene, Object obj) {
+        if (CollUtil.isNotEmpty(loader.getDesensitizationRules()) &&
+                (CollUtil.isEmpty(loader.getScan()) || StrUtil.startWithAny(context,
+                        ArrayUtil.toArray(loader.getScan(), String.class)))) { //todo：对类过滤处理，避免不必要的脱敏
+            return desensitizedFromAnnotation(scene, null, null, obj);
+        }
+        return obj;
     }
 
     /**
@@ -85,29 +89,29 @@ public class DefaultDesensitizationHandler extends DesensitizationHandler {
             if (ArrayUtil.isNotEmpty(annotations)) {
                 for (Annotation annotation : annotations) {
                     if (null == annotation) continue;
-                    if (annotation instanceof EmptyDesensitization) {
+                    if (annotation instanceof Empty) {
                         globalSearch = false;
-                        return (T) DesensitizedUtil.emptyDesensitized(scene, (EmptyDesensitization) annotation,
+                        return (T) DesensitizedUtil.emptyDesensitized(scene, (Empty) annotation,
                                 fieldName, val);
                     }
-                    if (annotation instanceof HashDesensitization) {
+                    if (annotation instanceof Hash) {
                         globalSearch = false;
-                        return (T) DesensitizedUtil.hashDesensitized(scene, (HashDesensitization) annotation,
+                        return (T) DesensitizedUtil.hashDesensitized(scene, (Hash) annotation,
                                 fieldName, val);
                     }
-                    if (annotation instanceof RegexDesensitization) {
+                    if (annotation instanceof Regex) {
                         globalSearch = false;
-                        return (T) DesensitizedUtil.regexDesensitized(scene, (RegexDesensitization) annotation,
+                        return (T) DesensitizedUtil.regexDesensitized(scene, (Regex) annotation,
                                 fieldName, val);
                     }
-                    if (annotation instanceof ReplaceDesensitization) {
+                    if (annotation instanceof Replace) {
                         globalSearch = false;
-                        return (T) DesensitizedUtil.replaceDesensitized(scene, (ReplaceDesensitization) annotation,
+                        return (T) DesensitizedUtil.replaceDesensitized(scene, (Replace) annotation,
                                 fieldName, val);
                     }
-                    if (annotation instanceof MaskDesensitization) {
+                    if (annotation instanceof Mask) {
                         globalSearch = false;
-                        return (T) DesensitizedUtil.maskDesensitized(scene, (MaskDesensitization) annotation,
+                        return (T) DesensitizedUtil.maskDesensitized(scene, (Mask) annotation,
                                 fieldName, val);
                     }
                 }
@@ -115,7 +119,7 @@ public class DefaultDesensitizationHandler extends DesensitizationHandler {
             return globalSearch ? (T) DesensitizedUtil.desensitized(scene, loader.getDesensitizationRules(), fieldName, val) : obj;
         } else if (null == obj || ObjectUtil.isBasicType(obj) || obj instanceof Enumeration || obj instanceof Number) {//todo：基础类型、枚举、数值
             return obj;
-        } else if (CollUtil.isEmpty(loader.getScan()) || StrUtil.startWithAny(obj.getClass().getName(), ArrayUtil.toArray(loader.getScan(), String.class))) { //todo：对类过滤处理，避免不必要的脱敏
+        } else {
             Field[] fields = ReflectUtil.getFields(obj.getClass());
             if (null == fields) return obj;
             for (Field field : fields) {
@@ -135,7 +139,7 @@ public class DefaultDesensitizationHandler extends DesensitizationHandler {
                 }
             }
             return obj;
-        } else return obj;
+        }
     }
 
     /**

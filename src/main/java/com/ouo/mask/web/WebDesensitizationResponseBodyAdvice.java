@@ -1,6 +1,8 @@
 package com.ouo.mask.web;
 
+import cn.hutool.core.annotation.AnnotationUtil;
 import com.ouo.mask.core.DesensitizationHandler;
+import com.ouo.mask.core.annotation.Desensitization;
 import com.ouo.mask.core.annotation.SceneEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
@@ -31,7 +33,12 @@ public class WebDesensitizationResponseBodyAdvice implements ResponseBodyAdvice<
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-        return null != handler && null != returnType && !Void.TYPE.equals(returnType.getMethod().getReturnType());
+        if (null != handler && null != returnType && !Void.TYPE.equals(returnType.getMethod().getReturnType())) {
+            Boolean enabled = AnnotationUtil.getAnnotationValue(returnType.getMethod(), Desensitization.class,
+                    "enabled");
+            return null == enabled || enabled;
+        }
+        return false;
     }
 
     @Override
@@ -39,6 +46,6 @@ public class WebDesensitizationResponseBodyAdvice implements ResponseBodyAdvice<
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
 
-        return handler.desensitized(SceneEnum.WEB, body);
+        return handler.desensitized(returnType.getDeclaringClass().getName(), SceneEnum.WEB, body);
     }
 }

@@ -41,7 +41,7 @@ public abstract class DesensitizedUtil {
      * @param data       数据
      * @return
      */
-    public static String emptyDesensitized(SceneEnum scene, EmptyDesensitization annotation, String fieldName, String data) {
+    public static String emptyDesensitized(SceneEnum scene, Empty annotation, String fieldName, String data) {
         if (null == annotation) return data;
         EmptyDesensitizationRule rule = new EmptyDesensitizationRule();
         rule.setScene(annotation.scene());
@@ -86,7 +86,7 @@ public abstract class DesensitizedUtil {
      * @param data       数据
      * @return
      */
-    public static String hashDesensitized(SceneEnum scene, HashDesensitization annotation, String fieldName, String data) {
+    public static String hashDesensitized(SceneEnum scene, Hash annotation, String fieldName, String data) {
         if (null == annotation) return data;
         HashDesensitizationRule rule = new HashDesensitizationRule();
         rule.setScene(annotation.scene());
@@ -125,7 +125,7 @@ public abstract class DesensitizedUtil {
      * @param data       数据
      * @return
      */
-    public static String regexDesensitized(SceneEnum scene, RegexDesensitization annotation, String fieldName, String data) {
+    public static String regexDesensitized(SceneEnum scene, Regex annotation, String fieldName, String data) {
         if (null == annotation) return data;
         RegexDesensitizationRule rule = new RegexDesensitizationRule();
         rule.setScene(annotation.scene());
@@ -177,7 +177,7 @@ public abstract class DesensitizedUtil {
      * @param data       数据
      * @return
      */
-    public static String replaceDesensitized(SceneEnum scene, ReplaceDesensitization annotation, String fieldName, String data) {
+    public static String replaceDesensitized(SceneEnum scene, Replace annotation, String fieldName, String data) {
         if (null == annotation) return data;
         ReplaceDesensitizationRule rule = new ReplaceDesensitizationRule();
         rule.setScene(annotation.scene());
@@ -192,7 +192,7 @@ public abstract class DesensitizedUtil {
 
         List<ReplaceDesensitizationRule.PosnProperty> posns = new ArrayList<>();
         if (null != annotation.posns()) {
-            for (ReplaceDesensitization.Posn replacePosn : annotation.posns()) {
+            for (Replace.Posn replacePosn : annotation.posns()) {
                 if (null == replacePosn) continue;
                 ReplaceDesensitizationRule.PosnProperty posn = new ReplaceDesensitizationRule.PosnProperty();
                 posn.setI(replacePosn.i());
@@ -216,7 +216,7 @@ public abstract class DesensitizedUtil {
      * @param data       数据
      * @return
      */
-    public static String maskDesensitized(SceneEnum scene, MaskDesensitization annotation, String fieldName, String data) {
+    public static String maskDesensitized(SceneEnum scene, Mask annotation, String fieldName, String data) {
         if (null == annotation) return data;
         ReplaceDesensitizationRule rule = new ReplaceDesensitizationRule();
         rule.setScene(annotation.scene());
@@ -229,7 +229,7 @@ public abstract class DesensitizedUtil {
 
         List<ReplaceDesensitizationRule.PosnProperty> posns = new ArrayList<>();
         if (null != annotation.posns()) {
-            for (MaskDesensitization.Posn maskPosn : annotation.posns()) {
+            for (Mask.Posn maskPosn : annotation.posns()) {
                 if (null == maskPosn) continue;
                 ReplaceDesensitizationRule.PosnProperty posn = new ReplaceDesensitizationRule.PosnProperty();
                 posn.setI(maskPosn.i());
