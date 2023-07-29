@@ -35,7 +35,6 @@
         <log4j.version>2.17.2</log4j.version>
         <lombok.version>1.18.12</lombok.version>
         <spring-boot.version>2.7.3</spring-boot.version>
-        <snakeyaml.version>1.33</snakeyaml.version>
         <propertiestojson.version>5.3.0</propertiestojson.version>
         <jackson-dataformat.version>2.14.0-rc3</jackson-dataformat.version>
         <junit-platform.version>1.8.2</junit-platform.version>
@@ -63,12 +62,6 @@
                 <artifactId>spring-boot-configuration-processor</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>-->
-            <!-- yaml -->
-            <dependency>
-                <groupId>org.yaml</groupId>
-                <artifactId>snakeyaml</artifactId>
-                <version>${snakeyaml.version}</version>
-            </dependency>
             <!-- propertiestojson: 解决properties文件转Map时，将key中属性引用变成对象（不建议使用，依赖Gson） -->
             <!--<dependency>
                 <groupId>pl.jalokim.propertiestojson</groupId>
@@ -148,11 +141,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
