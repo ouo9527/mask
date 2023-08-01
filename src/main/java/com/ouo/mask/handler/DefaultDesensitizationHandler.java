@@ -1,6 +1,5 @@
 package com.ouo.mask.handler;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -32,12 +31,8 @@ public class DefaultDesensitizationHandler implements DesensitizationHandler {
     private DesensitizationProperties properties;
 
     @Override
-    public <T> T desensitized(String context, SceneEnum scene, T data) {
-        if (CollUtil.isNotEmpty(properties.getRules()) &&
-                (ArrayUtil.isEmpty(properties.getScopes()) || StrUtil.startWithAny(context, properties.getScopes()))) { //todo：对类过滤处理，避免不必要的脱敏
-            return desensitizedFromAnnotation(scene, null, null, data);
-        }
-        return data;
+    public <T> T desensitized(SceneEnum scene, T data) {
+        return desensitizedFromAnnotation(scene, null, null, data);
     }
 
     /**
@@ -155,5 +150,22 @@ public class DefaultDesensitizationHandler implements DesensitizationHandler {
             //todo：对key-value脱敏处理
             return DesensitizedUtil.desensitized(scene, properties.getRules().get(key), key, Convert.convert(String.class, json, ""));
         }
+    }
+
+    @Override
+    public boolean isValid(String context, String[] roleId) {
+        //todo: 无需验证策略，即需要脱敏
+        if (null == properties.getStrategy()) return true;
+        //todo：验证脱敏范围即配置包路径，多个值时以英文逗号隔开；为了减少不必要的数据脱敏，否则会影响系统性能，因此推荐设置。若为空则所有路径生效
+        if (ArrayUtil.isNotEmpty(properties.getStrategy().getPackages()) &&
+                !StrUtil.startWithAny(context, properties.getStrategy().getPackages())) return false;
+        //todo：验证角色集中是否存在非脱敏角色
+        if (ArrayUtil.isNotEmpty(roleId) && ArrayUtil.containsAny(roleId,
+                properties.getStrategy().getNonMaskRule())) return false;
+        //todo：验证脱敏有效期
+        Date effectDate = properties.getStrategy().getEffectDate();
+        Date expiryDate = properties.getStrategy().getExpiryDate();
+        return !new Date().before(null == effectDate ? new Date() : effectDate) &&
+                !new Date().after(null == expiryDate ? new Date() : expiryDate);
     }
 }

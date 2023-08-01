@@ -5,7 +5,6 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
@@ -40,29 +39,22 @@ import java.util.*;
  * 3）在spring-boot2.0以下，@ConfigurationProperties映射对象原理由PropertiesConfigurationFactory；2.0后由ConfigurationPropertiesBindingPostProcessor
  */
 @Slf4j
-@Getter
-@ConfigurationProperties("ouo.desensitization")
+@ConfigurationProperties(prefix = "ouo.desensitization", ignoreInvalidFields = true)
 public class DesensitizationProperties {
     public static final String PREFIX = "ouo.desensitization";
     public static final String RULES = PREFIX + ".rules";
-    public static final String SCOPES = PREFIX + ".scopes";
+    public static final String STRATEGY = PREFIX + ".strategy";
 
-    //todo: 脱敏范围即配置包路径，多个值时以英文逗号隔开；为了减少不必要的数据脱敏，否则会影响系统性能，因此推荐设置。若为空则所有路径生效
+    //todo: 脱敏策略
     @Setter
-    private String[] scopes;
+    @Getter
+    private DesensitizationStrategy strategy;
 
     //todo: 脱敏规则，key：字段，value：规则集
     private Map<String, List<DesensitizationRule>> rules;
 
-    public void setRules(Properties properties) {
-        //todo：具体层级的Map
-        Dict dict = Dict.create();
-        CollUtil.forEach(properties, (k, v, i) -> {
-            BeanPath.create(StrUtil.toStringOrNull(k)).set(dict, v);
-        });
-        this.setScopes(StrSplitter.splitToArray(dict.getByPath(DesensitizationProperties.SCOPES, String.class),
-                ',', -1, true, true));
-        this.setRules(dict.getByPath(DesensitizationProperties.RULES, Map.class));
+    public Map<String, List<DesensitizationRule>> getRules() {
+        return MapUtil.defaultIfEmpty(rules, Collections.EMPTY_MAP);
     }
 
     public void setRules(Map rules) {
@@ -76,6 +68,16 @@ public class DesensitizationProperties {
             } else log.debug("{}.{}: This does not comply with the desensitization rules.",
                     DesensitizationProperties.RULES, field);
         });
+    }
+
+    public void setRules(Properties properties) {
+        //todo：具体层级的Map
+        Dict dict = Dict.create();
+        CollUtil.forEach(properties, (k, v, i) -> {
+            BeanPath.create(StrUtil.toStringOrNull(k)).set(dict, v);
+        });
+        this.setStrategy(dict.getByPath(DesensitizationProperties.STRATEGY, DesensitizationStrategy.class));
+        this.setRules(dict.getByPath(DesensitizationProperties.RULES, Map.class));
     }
 
     private List<DesensitizationRule> convert(String field, List<?> rules) {

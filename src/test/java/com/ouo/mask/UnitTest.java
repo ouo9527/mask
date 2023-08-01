@@ -141,7 +141,7 @@ public class UnitTest {
         map.put("name", "[1,2]");
 
         System.out.println(
-                handler.desensitized(UnitTest.class.getName(), SceneEnum.ALL, map));
+                handler.desensitized(SceneEnum.ALL, map));
 
         User user = new User();
         user.setName("张王四");
@@ -154,7 +154,7 @@ public class UnitTest {
         attach.setCard("532128199510286631");
         user.setAttach(attach);
 
-        System.out.println(JSON.toJSONString(handler.desensitized(UnitTest.class.getName(), SceneEnum.ALL, user)));
+        System.out.println(JSON.toJSONString(handler.desensitized(SceneEnum.ALL, user)));
     }
 
 

@@ -4,6 +4,7 @@ import cn.hutool.core.annotation.AnnotationUtil;
 import com.ouo.mask.annotation.Desensitization;
 import com.ouo.mask.enums.SceneEnum;
 import com.ouo.mask.handler.DesensitizationHandler;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
@@ -16,7 +17,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /***********************************************************
- * TODO:     脱敏处理AOP处理{@link org.springframework.web.bind.annotation.ResponseBody}
+ * TODO:     脱敏处理AOP处理
+ *  {@link org.springframework.web.bind.annotation.ResponseBody}
  * Author:   刘春
  * Date:     2022/12/1
  ***********************************************************/
@@ -26,6 +28,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 public class DesensitizationResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 
     private DesensitizationHandler handler;
+    @Getter
+    private UserInfoService userInfoService;
 
     public DesensitizationResponseBodyAdvice(DesensitizationHandler handler) {
         this.handler = handler;
@@ -46,6 +50,7 @@ public class DesensitizationResponseBodyAdvice implements ResponseBodyAdvice<Obj
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
 
-        return handler.desensitized(returnType.getDeclaringClass().getName(), SceneEnum.WEB, body);
+        return handler.isValid(returnType.getDeclaringClass().getName(),
+                null == userInfoService ? null : userInfoService.getCurrentUserRoleIds(request)) ? handler.desensitized(SceneEnum.WEB, body) : body;
     }
 }

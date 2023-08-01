@@ -54,8 +54,8 @@ public class Log4jDesensitizedLogEventFactory implements LogEventFactory {
                     if (i < message.getParameters().length) data.put(fields.get(i), message.getParameters()[i]);
                     else break;
                 }
-                mesg = new SimpleMessage(StrUtil.format(message.getFormat(),
-                        handler.desensitized(loggerName, SceneEnum.LOG, data)));
+                mesg = new SimpleMessage(StrUtil.format(message.getFormat(), handler.isValid(loggerName, null) ?
+                        handler.desensitized(SceneEnum.LOG, data) : data));
             }
         } catch (RuntimeException e) {
             //todo: 会引发死循环，从而造成栈溢出
