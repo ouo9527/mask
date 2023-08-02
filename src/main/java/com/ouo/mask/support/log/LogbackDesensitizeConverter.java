@@ -48,8 +48,7 @@ public class LogbackDesensitizeConverter extends MessageConverter {
                     if (i < event.getArgumentArray().length) data.put(fields.get(i), event.getArgumentArray()[i]);
                     else break;
                 }
-                return StrUtil.format(event.getMessage(), handler.isValid(event.getLoggerName(), null) ?
-                        handler.desensitized(SceneEnum.LOG, data) : data);
+                return StrUtil.format(event.getMessage(), handler.desensitized(event.getLoggerName(), SceneEnum.LOG, data));
             }
         } catch (RuntimeException e) {
             //todo: 会引发死循环，从而造成栈溢出

@@ -3,6 +3,7 @@ package com.ouo.mask;
 import cn.hutool.core.bean.BeanPath;
 import cn.hutool.core.comparator.CompareUtil;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.ReUtil;
 import com.alibaba.fastjson2.JSON;
@@ -110,6 +111,10 @@ public class UnitTest {
         rule.put("field", "12");
         rule.put("scene", "log");
         System.out.println(JSON.to(EmptyDesensitizationRule.class, rule));
+        Date effectDate = DateUtil.parse("2023-6-8");
+        Date expiryDate = DateUtil.parse("2023-07-8");
+        System.out.println(!new Date().before(null == effectDate ? new Date() : effectDate) &&
+                !new Date().after(null == expiryDate ? new Date() : expiryDate));
     }
 
     @Test
@@ -139,9 +144,10 @@ public class UnitTest {
         Map<String, Object> map = new HashMap<>();
         map.put("phone", "17722855144");
         map.put("name", "[1,2]");
+        map.put("ip", "14.23.0.1");
 
         System.out.println(
-                handler.desensitized(SceneEnum.ALL, map));
+                handler.desensitized(""/*UnitTest.class.getName()*/, SceneEnum.ALL, map));
 
         User user = new User();
         user.setName("张王四");
@@ -154,7 +160,7 @@ public class UnitTest {
         attach.setCard("532128199510286631");
         user.setAttach(attach);
 
-        System.out.println(JSON.toJSONString(handler.desensitized(SceneEnum.ALL, user)));
+        System.out.println(JSON.toJSONString(handler.desensitized(UnitTest.class.getName(), SceneEnum.ALL, user)));
     }
 
 

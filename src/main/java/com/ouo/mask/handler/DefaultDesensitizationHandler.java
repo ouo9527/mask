@@ -1,5 +1,6 @@
 package com.ouo.mask.handler;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -31,8 +32,8 @@ public class DefaultDesensitizationHandler implements DesensitizationHandler {
     private DesensitizationProperties properties;
 
     @Override
-    public <T> T desensitized(SceneEnum scene, T data) {
-        return desensitizedFromAnnotation(scene, null, null, data);
+    public <T> T desensitized(String context, SceneEnum scene, T data) {
+        return needToDesensitize(context, scene) ? desensitizedFromAnnotation(scene, null, null, data) : data;
     }
 
     /**
@@ -40,6 +41,7 @@ public class DefaultDesensitizationHandler implements DesensitizationHandler {
      *  注：对于待脱敏对象非基本(包含其包装)类型、数组/集合类型、迭代器和枚举类型外，则满足以下规则：
      *  1）必须提供public set/get 方法
      *  2）可以使用scan属性来扫描所需要待脱敏的对象
+     *  3) 规则配置优先于规则注解脱敏
      *  目的都是降低递归所造成栈溢出
      * @param scene       场景
      * @param fieldName   字段名
@@ -152,16 +154,21 @@ public class DefaultDesensitizationHandler implements DesensitizationHandler {
         }
     }
 
-    @Override
-    public boolean isValid(String context, String[] roleId) {
-        //todo: 无需验证策略，即需要脱敏
+    /**
+     * todo: 根据脱敏策略验证是否需要脱敏
+     *
+     * @param context 待脱敏对象所被使用的上下文即在那个类中使用
+     * @param scene   脱敏场景
+     * @return
+     */
+    public boolean needToDesensitize(String context, SceneEnum scene) {
+        //todo：对于日志场景，脱敏规则为空时，直接无需脱敏
+        if (SceneEnum.LOG == scene && CollUtil.isEmpty(properties.getRules())) return false;
+        //todo: 若无脱敏策略，则进行脱敏
         if (null == properties.getStrategy()) return true;
         //todo：验证脱敏范围即配置包路径，多个值时以英文逗号隔开；为了减少不必要的数据脱敏，否则会影响系统性能，因此推荐设置。若为空则所有路径生效
         if (ArrayUtil.isNotEmpty(properties.getStrategy().getPackages()) &&
                 !StrUtil.startWithAny(context, properties.getStrategy().getPackages())) return false;
-        //todo：验证角色集中是否存在非脱敏角色
-        if (ArrayUtil.isNotEmpty(roleId) && ArrayUtil.containsAny(roleId,
-                properties.getStrategy().getNonMaskRule())) return false;
         //todo：验证脱敏有效期
         Date effectDate = properties.getStrategy().getEffectDate();
         Date expiryDate = properties.getStrategy().getExpiryDate();

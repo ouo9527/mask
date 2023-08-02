@@ -29,7 +29,7 @@ public class DesensitizationResponseBodyAdvice implements ResponseBodyAdvice<Obj
 
     private DesensitizationHandler handler;
     @Getter
-    private UserInfoService userInfoService;
+    private UserMaskPermission permission;
 
     public DesensitizationResponseBodyAdvice(DesensitizationHandler handler) {
         this.handler = handler;
@@ -50,7 +50,7 @@ public class DesensitizationResponseBodyAdvice implements ResponseBodyAdvice<Obj
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
 
-        return handler.isValid(returnType.getDeclaringClass().getName(),
-                null == userInfoService ? null : userInfoService.getCurrentUserRoleIds(request)) ? handler.desensitized(SceneEnum.WEB, body) : body;
+        return (null != permission && permission.hasNotPermission(request)) ? body :
+                handler.desensitized(returnType.getDeclaringClass().getName(), SceneEnum.WEB, body);
     }
 }
