@@ -12,6 +12,7 @@ import com.ouo.mask.config.DesensitizationAutoConfiguration;
 import com.ouo.mask.config.DesensitizationProperties;
 import com.ouo.mask.config.SpringDesensitizationPlaceholderConfigurer;
 import com.ouo.mask.enums.SceneEnum;
+import com.ouo.mask.enums.SensitiveTypeEnum;
 import com.ouo.mask.handler.DesensitizationHandler;
 import com.ouo.mask.rule.DesensitizationRule;
 import com.ouo.mask.rule.EmptyDesensitizationRule;
@@ -152,11 +153,18 @@ public class UnitTest {
         User user = new User();
         user.setName("张王四");
         user.setExtra("{\"phone\":17722855144}");
-        user.setTel("17722855144");
+        user.setTel("0987-2322");
         user.setPhone(17722855144L);
+        user.setMobile("17722855144");
+        user.setAddr("北京市朝阳区发和小区1号楼2单元303室");
+        user.setAmount("10387.34");
+        user.setCar("云A8848");
+        user.setBankCard("636669809199510286631");
+        user.setPassport("G99923456");
+        user.setDate("2023年9月11日");
         User.Attach attach = new User.Attach();
         attach.setHobbies(new String[]{"打球"});
-        attach.setEmail("128756@qq.com");
+        attach.setEmail("lc123@qq.com");
         attach.setCard("532128199510286631");
         user.setAttach(attach);
 
@@ -167,14 +175,29 @@ public class UnitTest {
     @Setter
     @Getter
     static class User {
-        @Mask(posns = {@Mask.Posn(i = 1)}, surplusHide = true)
+        @Mask(type = SensitiveTypeEnum.FULL_NAME)
         String name;
         @Repl(posns = {@Repl.Posn(i = 3), @Repl.Posn(i = 8, rv = "#")})
         String extra;
-        @Repl(posns = {@Repl.Posn(i = 3), @Repl.Posn(i = 8, rv = "#?12$%34")})
+        //@Repl(posns = {@Repl.Posn(i = 3), @Repl.Posn(i = 8, rv = "#?12$%34")})
+        @Mask(type = SensitiveTypeEnum.FIXED_PHONE)
         String tel;
-        @Mask(posns = {@Mask.Posn(i = 3), @Mask.Posn(i = 8, hide = true)})
+        @Mask(type = SensitiveTypeEnum.MOBILE_PHONE/*, custom = Mask.CommonMaskOptions.PRE_3_SUF_3*/)
         Long phone;
+        @Mask(type = SensitiveTypeEnum.MOBILE_PHONE, custom = "2, 3")
+        String mobile;
+        @Mask(type = SensitiveTypeEnum.ADDRESS)
+        String addr;
+        @Mask(type = SensitiveTypeEnum.NUMBER)
+        String amount;
+        @Mask(type = SensitiveTypeEnum.CAR_LICENSE)
+        String car;
+        @Mask(type = SensitiveTypeEnum.PASSPORT)
+        String passport;
+        @Mask(type = SensitiveTypeEnum.BANK_CARD)
+        String bankCard;
+        @Regex(pattern = "(\\d{4})年(\\d{1,2})月(\\d{1,2})日.*", rv = "$1年**月**日")
+        String date;
 
         @Empty
         Attach attach;
@@ -184,7 +207,8 @@ public class UnitTest {
         static class Attach {
             @Empty
             String[] hobbies;
-            @Regex(pattern = "(\\w{3})\\w+(@qq.com)", rv = "$1***$2")
+            //@Regex(pattern = "(\\w{3})\\w+(@qq.com)", rv = "$1***$2")
+            @Mask(type = SensitiveTypeEnum.EMAIL)
             String email;
             @Hash(algorithm = Hash.AlgorithmEnum.MD5, salt = "ws@4q#")
             String card;

@@ -4,7 +4,7 @@ import cn.hutool.core.annotation.AnnotationUtil;
 import com.ouo.mask.annotation.Desensitization;
 import com.ouo.mask.enums.SceneEnum;
 import com.ouo.mask.handler.DesensitizationHandler;
-import lombok.Getter;
+import com.ouo.mask.util.SpringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
@@ -28,8 +28,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 public class DesensitizationResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 
     private DesensitizationHandler handler;
-    @Getter
-    private UserMaskPermission permission;
 
     public DesensitizationResponseBodyAdvice(DesensitizationHandler handler) {
         this.handler = handler;
@@ -49,7 +47,11 @@ public class DesensitizationResponseBodyAdvice implements ResponseBodyAdvice<Obj
     public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
                                   Class<? extends HttpMessageConverter<?>> selectedConverterType,
                                   ServerHttpRequest request, ServerHttpResponse response) {
-
+        UserMaskPermission permission = null;
+        try {
+            permission = SpringUtil.getBean(UserMaskPermission.class);
+        } catch (RuntimeException e) {
+        }
         return (null != permission && permission.hasNotPermission(request)) ? body :
                 handler.desensitized(returnType.getDeclaringClass().getName(), SceneEnum.WEB, body);
     }

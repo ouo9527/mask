@@ -49,12 +49,8 @@ ouo:
         mode: mask
         #脱敏场景：日志log、网页web、全部all，默认all
         scene: log
-        #位置，默认显示
-        posns[0]:
-          i: 1
-        posns[1]:
-          i: 2
-          hide: true
+        #敏感类型，采用内置脱敏配置
+        type: full_name
       - field: phone
         mode: replace
         scene: all

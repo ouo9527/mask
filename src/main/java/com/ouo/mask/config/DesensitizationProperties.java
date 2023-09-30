@@ -2,11 +2,8 @@ package com.ouo.mask.config;
 
 import cn.hutool.core.bean.BeanPath;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.util.NumberUtil;
-import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.ouo.mask.enums.ModeEnum;
@@ -98,31 +95,7 @@ public class DesensitizationProperties {
                 if (posns instanceof Map) ((Map) r).put("posns", CollUtil.newArrayList(((Map) posns).values()));
                 dr = JSON.to(ReplDesensitizationRule.class, r);
             } else if (StrUtil.equalsIgnoreCase(mode, ModeEnum.MASK.name())) {//todo：掩盖
-                Object obj = ((Map) r).get("posns");
-                List<?> posns = Collections.EMPTY_LIST;
-                //todo：对于springboot yml转properties时，若多层数组嵌套时，会被转成LinkedHashMap
-                if (obj instanceof Map)
-                    ((Map) r).put("posns", posns = CollUtil.newArrayList(((Map) obj).values()));
-                else if (obj instanceof List) posns = (List<?>) obj;
-                ReplDesensitizationRule rdr = JSON.to(ReplDesensitizationRule.class, r);
-                ReplDesensitizationRule.Posn surplus = new ReplDesensitizationRule.Posn();
-                surplus.setFixed(true);
-                surplus.setRv(Convert.convert(Boolean.class, ObjUtil.defaultIfNull(((Map) r).get("surplusHide"),
-                        ((Map) r).get("surplus-hide")), false) ? "*" : "");
-                rdr.setSurplus(surplus);
-                List<ReplDesensitizationRule.Posn> ps = new ArrayList<>(posns.size());
-                for (int j = 0; j < posns.size(); j++) {
-                    Map<String, Object> posn = JSON.to(Map.class, posns.get(j));
-                    if (CollUtil.isEmpty(posn) || !NumberUtil.isInteger(StrUtil.toStringOrNull(posn.get("i"))))
-                        continue;
-                    ReplDesensitizationRule.Posn p = new ReplDesensitizationRule.Posn();
-                    p.setI(Convert.convert(Integer.class, posn.get("i")));
-                    p.setFixed(true);
-                    p.setRv(Convert.convert(Boolean.class, posn.get("hide"), false) ? "*" : "");
-                    ps.add(p);
-                }
-                rdr.setPosns(ps);
-                dr = rdr;
+                dr = JSON.to(MaskDesensitizationRule.class, r);
             } else {
                 log.debug("{}.{}[{}]: mode={} is not within the range of [empty,hash,regex,replace,mask]",
                         DesensitizationProperties.RULES, field, i, mode);

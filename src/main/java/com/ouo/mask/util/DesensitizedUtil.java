@@ -1,6 +1,7 @@
 package com.ouo.mask.util;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Slf4j
 public abstract class DesensitizedUtil {
@@ -210,6 +212,16 @@ public abstract class DesensitizedUtil {
 
     /**
      * 掩盖模式(脱敏后等长)：根据场景匹配掩盖注解中规则脱敏该字段的数据
+     *  1、姓名：默认自动根据字符长度显示，当长度小于等于2，则显示第1个字符，否则显示前2个字符
+     *  2、手机号：大陆-11位、台湾-10位、香港澳门-8位。默认自动根据字符长度显示大陆-前3后4、台湾-前3后3、香港澳门-前2后2
+     *  3、固话：由3～4位区号+7～8位固定数字组成。默认自动根据字符长度显示，当区号小于等于3，则显示前3后2，否则前4后2
+     *  4、身份证号：由6位地址码+8位出生日期+3位顺序码+1位校验码，有15位或18位。默认显示前3后4
+     *  5、地址：默认自动根据正则：(.+省)?(.+市)?(.+自治区)?(.+行政区)?(.+县)?(.+区)?.+  进行对省以下进行如：广西壮族自治区**显
+     *  6、电子邮件：默认自动根据@前字符长度显示，且@后字符显示，当@前字符长度小于3，则@前字符全显示，否则显示前三位及@后
+     *  7、中国大陆车牌：由1个汉字+1个字母+5～6字母和数字组成。默认显示前2后2
+     *  8、银行卡：默认显示前6后4
+     *  9、护照：由1位字母（护照类型）+8位数字组成。默认显示前1后3
+     *  10、数值：默认显示第1位
      *
      * @param scene      场景
      * @param annotation 规则
@@ -219,30 +231,102 @@ public abstract class DesensitizedUtil {
      */
     public static String maskDesensitized(SceneEnum scene, Mask annotation, String fieldName, String data) {
         if (null == annotation) return data;
-        ReplDesensitizationRule rule = new ReplDesensitizationRule();
-        rule.setScene(annotation.scene());
-        rule.setField(fieldName);
-
-        ReplDesensitizationRule.Posn surplus = new ReplDesensitizationRule.Posn();
-        surplus.setFixed(true);
-        surplus.setRv(annotation.surplusHide() ? "*" : "");
-        rule.setSurplus(surplus);
-
-        List<ReplDesensitizationRule.Posn> posns = new ArrayList<>();
-        if (null != annotation.posns()) {
-            for (Mask.Posn p : annotation.posns()) {
-                if (null == p) continue;
-                ReplDesensitizationRule.Posn posn = new ReplDesensitizationRule.Posn();
-                posn.setI(p.i());
-                posn.setFixed(true);
-                posn.setRv(p.hide() ? "*" : "");
-
-                posns.add(posn);
+        int len = StrUtil.length(data);
+        if (StrUtil.isBlank(annotation.custom())) {
+            switch (annotation.type()) {
+                case FULL_NAME:
+                    return StrUtil.hide(data, 2 < len ? 2 : 1, len);
+                case MOBILE_PHONE: {
+                    int pre = 0;
+                    int suf = 0;
+                    if (8 >= len) {
+                        pre = suf = 2;
+                    } else if (10 >= len) {
+                        pre = suf = 3;
+                    } else {
+                        pre = 3;
+                        suf = 4;
+                    }
+                    return StrUtil.hide(data, pre, len - suf);
+                }
+                case FIXED_PHONE: {
+                    List<String> newData = StrUtil.splitTrim(data, '-');
+                    int pre = 0;
+                    int suf = 2;
+                    if (2 == newData.size()) {
+                        pre = StrUtil.length(newData.get(0)) + 1;
+                    } else if (10 >= len) {
+                        pre = 3;
+                    } else {
+                        pre = 4;
+                    }
+                    return StrUtil.hide(data, pre, len - suf);
+                }
+                case ID_CARD:
+                    return StrUtil.hide(data, 3, len - 4);
+                case ADDRESS: {
+                    List<String> addrs = ReUtil.getAllGroups(Pattern.compile("(.+省)?(.+市)?(.+自治区)?(.+行政区)?(.+县)?(.+区)?.+"), data, false);
+                    if (CollUtil.isEmpty(addrs)) return data;
+                    StringBuilder newData = new StringBuilder();
+                    int i = 0;
+                    if (StrUtil.isNotBlank(addrs.get(0))) {
+                        newData.append(addrs.get(0));
+                        i += addrs.get(0).length();
+                    }
+                    if (StrUtil.isNotBlank(addrs.get(1))) {
+                        newData.append(StrUtil.hide(addrs.get(1), -1, addrs.get(1).length() - 1));
+                        i += addrs.get(1).length();
+                    }
+                    if (StrUtil.isNotBlank(addrs.get(2))) {
+                        newData.append(StrUtil.hide(addrs.get(2), -1, addrs.get(2).length() - 3));
+                        i += addrs.get(2).length();
+                    }
+                    if (StrUtil.isNotBlank(addrs.get(3))) {
+                        newData.append(StrUtil.hide(addrs.get(3), -1, addrs.get(3).length() - 3));
+                        i += addrs.get(3).length();
+                    }
+                    if (StrUtil.isNotBlank(addrs.get(4))) {
+                        newData.append(StrUtil.hide(addrs.get(4), -1, addrs.get(4).length() - 1));
+                        i += addrs.get(4).length();
+                    }
+                    if (StrUtil.isNotBlank(addrs.get(5))) {
+                        newData.append(StrUtil.hide(addrs.get(5), -1, addrs.get(5).length() - 1));
+                        i += addrs.get(5).length();
+                    }
+                    return 0 == i ? StrUtil.hide(data, 7, len)
+                            : newData.append(StrUtil.repeat('*', len - i)).toString();
+                }
+                case EMAIL: {
+                    List<String> email = StrUtil.splitTrim(data, '@');
+                    if (2 == email.size()) {
+                        StringBuilder newData = new StringBuilder();
+                        return newData
+                                .append(StrUtil.hide(email.get(0), 3, StrUtil.length(email.get(0))))
+                                .append('@')
+                                .append(email.get(1))
+                                .toString();
+                    } else return data;
+                }
+                case CAR_LICENSE:
+                    return StrUtil.hide(data, 2, len - 2);
+                case BANK_CARD:
+                    return StrUtil.hide(data, 6, len - 4);
+                case PASSPORT:
+                    return StrUtil.hide(data, 1, len - 3);
+                case NUMBER:
+                    return StrUtil.hide(data, 1, len);
+                default:
+                    return data;
             }
+        } else {
+            List<String> custom = StrUtil.split(annotation.custom(), ',');
+            if (1 == custom.size()) {
+                return StrUtil.hide(data, NumberUtil.parseInt(StrUtil.trim(custom.get(0))), len);
+            }
+            return StrUtil.hide(data, NumberUtil.parseInt(StrUtil.trim(custom.get(0))),
+                    len - NumberUtil.parseInt(StrUtil.trim(custom.get(1))));
         }
-        rule.setPosns(posns);
 
-        return replDesensitized(scene, rule, fieldName, data);
     }
 
     /**
