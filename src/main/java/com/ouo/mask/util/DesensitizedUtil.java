@@ -1,7 +1,6 @@
 package com.ouo.mask.util;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.ReUtil;
 import cn.hutool.core.util.StrUtil;
@@ -210,6 +209,22 @@ public abstract class DesensitizedUtil {
         return replDesensitized(scene, rule, fieldName, data);
     }
 
+
+    public static String maskDesensitized(SceneEnum scene, Mask annotation, String fieldName, String data) {
+        if (null == annotation) return data;
+        MaskDesensitizationRule rule = new MaskDesensitizationRule();
+        rule.setScene(annotation.scene());
+        rule.setField(fieldName);
+        rule.setType(annotation.type());
+
+        if (null != annotation.show()) {
+            MaskDesensitizationRule.CustomShow show = new MaskDesensitizationRule.CustomShow();
+            show.setPre(annotation.show().pre());
+            show.setSuf(annotation.show().suf());
+            rule.setShow(show);
+        }
+        return maskDesensitized(scene, rule, fieldName, data);
+    }
     /**
      * 掩盖模式(脱敏后等长)：根据场景匹配掩盖注解中规则脱敏该字段的数据
      *  1、姓名：默认自动根据字符长度显示，当长度小于等于2，则显示第1个字符，否则显示前2个字符
@@ -224,16 +239,16 @@ public abstract class DesensitizedUtil {
      *  10、数值：默认显示第1位
      *
      * @param scene      场景
-     * @param annotation 规则
+     * @param rule       规则
      * @param fieldName  字段名
      * @param data       数据
      * @return
      */
-    public static String maskDesensitized(SceneEnum scene, Mask annotation, String fieldName, String data) {
-        if (null == annotation) return data;
+    public static String maskDesensitized(SceneEnum scene, MaskDesensitizationRule rule, String fieldName, String data) {
+        if (notDesensitization(scene, rule, fieldName, data)) return data;
         int len = StrUtil.length(data);
-        if (StrUtil.isBlank(annotation.custom())) {
-            switch (annotation.type()) {
+        if ((null == rule.getShow()) || (0 >= rule.getShow().getPre() && 0 >= rule.getShow().getSuf())) {
+            switch (rule.getType()) {
                 case FULL_NAME:
                     return StrUtil.hide(data, 2 < len ? 2 : 1, len);
                 case MOBILE_PHONE: {
@@ -319,12 +334,10 @@ public abstract class DesensitizedUtil {
                     return data;
             }
         } else {
-            List<String> custom = StrUtil.split(annotation.custom(), ',');
-            if (1 == custom.size()) {
-                return StrUtil.hide(data, NumberUtil.parseInt(StrUtil.trim(custom.get(0))), len);
+            if (0 >= rule.getShow().getSuf()) {
+                return StrUtil.hide(data, rule.getShow().getPre(), len);
             }
-            return StrUtil.hide(data, NumberUtil.parseInt(StrUtil.trim(custom.get(0))),
-                    len - NumberUtil.parseInt(StrUtil.trim(custom.get(1))));
+            return StrUtil.hide(data, rule.getShow().getPre(), len - rule.getShow().getSuf());
         }
 
     }
@@ -358,6 +371,9 @@ public abstract class DesensitizedUtil {
             }
             if (rule instanceof ReplDesensitizationRule) {//todo: 替换(脱敏后等长)
                 return replDesensitized(scene, (ReplDesensitizationRule) rule, fieldName, data);
+            }
+            if (rule instanceof MaskDesensitizationRule) {//todo: 掩盖(脱敏后等长)
+                return maskDesensitized(scene, (MaskDesensitizationRule) rule, fieldName, data);
             }
         }
         return data;

@@ -36,45 +36,16 @@ public @interface Mask {
      * 10、护照：由1位字母（护照类型）+8位数字组成。默认显示前1后3
      * 11、数值：默认显示第1位
      */
-    String custom() default "";
+    CustomShow show() default @CustomShow(pre = 0, suf = 0);
 
-    /**
-     * todo: 常用脱敏选项，用于自定义显示
-     */
-    interface CommonMaskOptions {
-        // TODO：前1～9显示
-        String PRE_1 = "1";
-        String PRE_2 = "2";
-        String PRE_3 = "3";
-        String PRE_4 = "4";
-        String PRE_5 = "5";
-        String PRE_6 = "6";
-        String PRE_7 = "7";
-        String PRE_8 = "8";
-        String PRE_9 = "9";
+    //TODO：自定义显示
+    @Target({})
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface CustomShow {
+        // TODO：前几位显示
+        int pre();
 
-        // TODO：前1～9后1～9显示
-        String PRE_1_SUF_1 = "1,1";
-        String PRE_1_SUF_2 = "1,2";
-        String PRE_1_SUF_3 = "1,3";
-        String PRE_2_SUF_2 = "2,2";
-        String PRE_3_SUF_1 = "3,1";
-        String PRE_3_SUF_3 = "3,3";
-        String PRE_3_SUF_4 = "3,4";
-        String PRE_4_SUF_2 = "4,2";
-        String PRE_4_SUF_4 = "4,4";
-        String PRE_6_SUF_3 = "6,3";
-        String PRE_6_SUF_4 = "6,4";
-
-        // TODO：后1～9显示
-        String SUF_1 = ",1";
-        String SUF_2 = ",2";
-        String SUF_3 = ",3";
-        String SUF_4 = ",4";
-        String SUF_5 = ",5";
-        String SUF_6 = ",6";
-        String SUF_7 = ",7";
-        String SUF_8 = ",8";
-        String SUF_9 = ",9";
+        // TODO：后几位显示
+        int suf();
     }
 }

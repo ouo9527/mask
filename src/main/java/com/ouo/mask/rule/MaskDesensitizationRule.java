@@ -28,5 +28,15 @@ public class MaskDesensitizationRule extends DesensitizationRule {
      * 10、护照：由1位字母（护照类型）+8位数字组成。默认显示前1后3
      * 11、数值：默认显示第1位
      */
-    private String custom;
+    private CustomShow show;
+
+    //TODO：自定义显示
+    @Setter
+    @Getter
+    public static class CustomShow {
+        // TODO：前几位显示
+        private int pre;
+        // TODO：后几位显示
+        private int suf;
+    }
 }

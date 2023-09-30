@@ -184,7 +184,7 @@ public class UnitTest {
         String tel;
         @Mask(type = SensitiveTypeEnum.MOBILE_PHONE/*, custom = Mask.CommonMaskOptions.PRE_3_SUF_3*/)
         Long phone;
-        @Mask(type = SensitiveTypeEnum.MOBILE_PHONE, custom = "2, 3")
+        @Mask(type = SensitiveTypeEnum.MOBILE_PHONE, show = @Mask.CustomShow(pre = 2, suf = 3))
         String mobile;
         @Mask(type = SensitiveTypeEnum.ADDRESS)
         String addr;
